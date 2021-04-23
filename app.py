@@ -1,11 +1,8 @@
 import telebot
-import requests
-import json
-import config
+from config import currency, TOKEN
+from extensions import APIException, CurrencyConverter, Words
 
-bot = telebot.TeleBot(config.TOKEN)
-
-currency = {'доллар': 'USD', 'евро': 'EUR', 'рубль': 'RUB'}
+bot = telebot.TeleBot(TOKEN)
 
 
 @bot.message_handler(commands=['start', 'help'])
@@ -14,7 +11,8 @@ def helper(message: telebot.types.Message):
 <валюта которую переводим> <в какую валюту переводим> 
 <количество переводимой валюты>
 Пример: доллар рубль 100
-Список доступных валют: /values'''
+Список доступных валют: /values
+Десятичные дроби вводите через точку'''
     bot.send_message(message.chat.id, text)
 
 
@@ -28,11 +26,23 @@ def val(message: telebot.types.Message):
 
 @bot.message_handler(content_types=['text'])
 def convert(message: telebot.types.Message):
-    base, quote, amount = message.text.split(' ')
-    r = requests.get(f'https://min-api.cryptocompare.com/data/price?fsym={currency[base]}&tsyms={currency[quote]}')
-    total = float(json.loads(r.content)[currency[quote]]) * float(amount)
-    text = f'Цена {amount} {base} - {total} {quote}'
-    bot.send_message(message.chat.id, text)
+    try:
+        list_ = message.text.lower().split(' ')
+        values = [_ for _ in list_ if _ != '']
+        if len(values) != 3:
+            raise APIException('Неверное количество параметров. Введите команду снова')
+        base, quote, amount = values
+        total = CurrencyConverter.get_price(base, quote, amount)
+        base = Words.morph(base, amount)
+        quote = Words.morph(quote, total)
+    except APIException as e:
+        bot.reply_to(message, f'Ошибка пользователя.\n{e}')
+    except Exception as e:
+        bot.reply_to(message, f'Ошибка сервера.\n{e}')
+    else:
+        total = '{:.2f}'.format(total)
+        text = f'Цена за {amount} {base} - {total} {quote}'
+        bot.send_message(message.chat.id, text)
 
 
 bot.polling(none_stop=True)
