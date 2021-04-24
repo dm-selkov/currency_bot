@@ -41,17 +41,9 @@ class Words:
     @staticmethod
     def morph(word, qty):
         qty = int(float(qty))
-        if qty < 10:
-            if qty == 1:
-                return right_forms[word][0]
-            elif qty in [2, 3, 4]:
-                return right_forms[word][1]
-            else:
-                return right_forms[word][2]
+        if qty % 10 == 1 and qty % 100 != 11:
+            return right_forms[word][0]
+        elif qty % 10 in [2, 3, 4] and qty % 100 not in [12, 13, 14]:
+            return right_forms[word][1]
         else:
-            if qty % 10 == 1 and qty % 100 != 11:
-                return right_forms[word][0]
-            elif qty % 10 in [2, 3, 4] and qty % 100 not in [12, 13, 14]:
-                return right_forms[word][1]
-            else:
-                return right_forms[word][2]
+            return right_forms[word][2]
